@@ -1,124 +1,244 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Information Board</title>
-    {{-- Memuat Tailwind CSS melalui Vite --}}
-    @vite('resources/css/app.css')
-    
     <style>
-        /* CSS Utama untuk Fullscreen dan Background Hitam */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         html, body {
             height: 100%;
             overflow: hidden;
-            margin: 0;
-            padding: 0;
-            background-color: #000;
+            font-family: 'Inter', sans-serif;
+            background: #000000;
         }
         
         #display-container {
             width: 100vw;
             height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
         }
 
-        /* Area Wrapper Gambar (Menyesuaikan dengan jam di bawah) */
+        /* Area gambar portrait 9:16 - dikecilkan */
         #image-wrapper {
-            height: calc(100vh - 4rem); 
-            width: auto;
-            max-width: 100vw;
+            width: calc(92vh * 9 / 16);
+            height: 92vh;
+            max-width: 95vw;
             position: relative;
             overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
         }
         
-        /* Layout Portrait (9:16) pada Layar Landscape */
-        @media (orientation: landscape) {
-             #image-wrapper {
-                width: calc((100vh - 4rem) * 9 / 16); 
-                height: calc(100vh - 4rem);
-                max-width: 100vw;
-            }
-        }
-
-        /* Layout Portrait (9:16) pada Layar Portrait */
         @media (orientation: portrait) {
-             #image-wrapper {
-                width: 100vw;
-                height: calc(100vw * 16 / 9); 
-                max-height: 100vh;
+            #image-wrapper {
+                width: 95vw;
+                height: calc(95vw * 16 / 9);
+                max-height: 92vh;
             }
         }
         
-        /* Gaya Gambar Slideshow */
         .slide-image {
             width: 100%;
             height: 100%;
-            object-fit: cover; 
+            object-fit: cover;
             position: absolute;
             top: 0;
             left: 0;
             opacity: 0;
-            transition: opacity 1s ease-in-out; 
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .slide-image.active {
             opacity: 1;
         }
 
-        /* Gaya Jam Real-Time */
-        #real-time-clock {
+        /* Clock overlay - positioned at top left */
+        #clock-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        #clock-box {
+            background: transparent;
+            padding: 0;
+        }
+
+        #time-display {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 
+                         0 0 20px rgba(0, 0, 0, 0.7);
+        }
+
+        #date-display {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 
+                         0 0 15px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Running text - positioned inside image at bottom */
+        #running-text-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 4rem; 
-            background-color: rgba(0, 0, 0, 0.7); 
-            color: #fff;
+            height: 100px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
+            overflow: hidden;
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 2.5rem; 
-            font-weight: bold;
-            font-family: monospace;
-            padding: 0 1rem;
             z-index: 10;
         }
-        
-        /* Gaya Tombol Logout */
-        .logout-btn-display {
+
+        #running-text {
+            display: flex;
+            white-space: nowrap;
+            animation: scroll-left 35s linear infinite;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95),
+                         0 0 20px rgba(0, 0, 0, 0.9),
+                         2px 2px 4px rgba(0, 0, 0, 1);
+        }
+
+        #running-text span {
+            padding: 0 50px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        #running-text span::before {
+            content: '●';
+            color: #4ecdc4;
+            margin-right: 25px;
+            font-size: 0.7rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Logout button */
+        .logout-btn {
             position: absolute;
             top: 20px;
             right: 20px;
-            z-index: 20; /* Lebih tinggi dari jam */
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 40;
+            text-decoration: none;
+            display: inline-block;
+            backdrop-filter: blur(8px);
+        }
+
+        .logout-btn:hover {
+            background: rgba(185, 28, 28, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+        }
+
+        /* Responsive untuk layar kecil */
+        @media (max-width: 768px) {
+            #time-display {
+                font-size: 1.4rem;
+                letter-spacing: 1.5px;
+            }
+            
+            #date-display {
+                font-size: 0.65rem;
+            }
+            
+            #clock-overlay {
+                top: 20px;
+                left: 20px;
+            }
+            
+            #running-text {
+                font-size: 0.9rem;
+            }
+            
+            #running-text-overlay {
+                height: 80px;
+            }
+        }
+
+        /* Loading placeholder */
+        .loading-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 1.5rem;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
     <div id="display-container">
         
-        {{-- Tombol Logout (Hanya tampil jika user terotentikasi) --}}
+        <!-- Logout Button (untuk authenticated users) -->
         @auth 
-            <div class="logout-btn-display">
-                <a class="text-white bg-red-600 hover:bg-red-700 font-bold py-2 px-4 rounded-lg shadow-xl text-sm" 
-                   href="{{ route('logout') }}" 
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    {{ __('Logout') }}
-                </a>
-            </div>
+            <a class="logout-btn" 
+               href="{{ route('logout') }}" 
+               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                Logout
+            </a>
         @endauth
         
-        {{-- Form tersembunyi untuk proses POST Logout --}}
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
             @csrf
         </form>
 
-        {{-- Wrapper Gambar Slideshow --}}
+        <!-- Image Slideshow Wrapper -->
         <div id="image-wrapper">
+            <!-- Images dari Laravel -->
             @foreach ($images as $key => $path)
                 <img src="{{ Storage::url($path) }}" 
                      alt="Poster {{ $key + 1 }}" 
@@ -126,57 +246,87 @@
                      data-index="{{ $key }}">
             @endforeach
             
-            {{-- Tampilan Default jika tidak ada gambar --}}
+            <!-- Placeholder jika tidak ada gambar -->
             @if (count($images) === 0)
-                <div class="slide-image active flex items-center justify-center bg-gray-900 text-white text-3xl">
+                <div class="slide-image active loading-placeholder">
                     Tidak Ada Poster Aktif
                 </div>
             @endif
+
+            <!-- Clock Overlay (di dalam gambar) -->
+            <div id="clock-overlay">
+                <div id="clock-box">
+                    <div id="time-display">00:00:00</div>
+                    <div id="date-display">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Running Text Overlay (di dalam gambar) -->
+            <div id="running-text-overlay">
+                <div id="running-text">
+                    <span>Selamat Datang di Universitas Janabadra  </span>
+                    <span>Mengembangkan Potensi Membangun Masa Depan</span>
+                    <span>Pendaftaran Mahasiswa Baru Dibuka</span>
+                    <span>Mari Bergabung Bersama Kami</span>
+                    <span>Berprestasi Berkarya Berdedikasi</span>
+                    <span>Selamat Datang di Universitas</span>
+                    <span>Mengembangkan Potensi Membangun Masa Depan</span>
+                    <span>Pendaftaran Mahasiswa Baru Dibuka</span>
+                    <span>Mari Bergabung Bersama Kami</span>
+                    <span>Berprestasi Berkarya Berdedikasi</span>
+                </div>
+            </div>
         </div>
 
-        {{-- Jam Real-Time --}}
-        <div id="real-time-clock"></div>
     </div>
 
     <script>
-        // --- 1. Jam Real-Time (HH:MM:SS) ---
+        // Konfigurasi
+        const SLIDESHOW_INTERVAL = 7000; // 7 detik
+        
+        // Fungsi untuk update jam dan tanggal
         function updateClock() {
             const now = new Date();
-            // Menggunakan local time Indonesia (WIB/WITA/WIT), jika server/klien sudah diset dengan benar
+            
+            // Format waktu HH:MM:SS
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('time-display').textContent = `${hours}:${minutes}:${seconds}`;
             
-            const timeString = `${hours}:${minutes}:${seconds}`;
-            document.getElementById('real-time-clock').textContent = timeString;
+            // Format tanggal lengkap
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const dayName = days[now.getDay()];
+            const date = now.getDate();
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear();
+            
+            document.getElementById('date-display').textContent = 
+                `${dayName}, ${date} ${monthName} ${year}`;
         }
 
-        setInterval(updateClock, 1000);
-        updateClock(); 
-        
-        // --- 2. Slideshow Otomatis ---
+        // Slideshow logic
         const images = document.querySelectorAll('.slide-image');
         const totalImages = images.length;
 
-        // Hanya jalankan slideshow jika ada lebih dari satu gambar
         if (totalImages > 1) {
             let currentImageIndex = 0;
-            const slideshowInterval = 7000; // 7 detik
 
             function nextSlide() {
-                // Hapus kelas 'active' dari gambar saat ini
                 images[currentImageIndex].classList.remove('active');
-
-                // Pindah ke indeks berikutnya, kembali ke 0 jika sudah terakhir
                 currentImageIndex = (currentImageIndex + 1) % totalImages;
-
-                // Tambahkan kelas 'active' ke gambar baru
                 images[currentImageIndex].classList.add('active');
             }
 
-            // Mulai interval slideshow
-            setInterval(nextSlide, slideshowInterval);
+            setInterval(nextSlide, SLIDESHOW_INTERVAL);
         }
+
+        // Initialize
+        updateClock();
+        setInterval(updateClock, 1000);
     </script>
 </body>
 </html>
