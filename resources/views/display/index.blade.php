@@ -264,7 +264,7 @@
             <!-- Running Text Overlay (di dalam gambar) -->
             <div id="running-text-overlay">
                 <div id="running-text">
-                    <span>Selamat Datang di Universitas Janabadra  </span>
+                    <span>Selamat Datang di Universitas</span>
                     <span>Mengembangkan Potensi Membangun Masa Depan</span>
                     <span>Pendaftaran Mahasiswa Baru Dibuka</span>
                     <span>Mari Bergabung Bersama Kami</span>

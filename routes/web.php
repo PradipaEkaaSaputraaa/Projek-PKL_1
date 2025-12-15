@@ -3,20 +3,18 @@
 use App\Http\Controllers\PosterController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Auth\RegisterController;
 
-// Route yang dibuat oleh php artisan ui:auth (untuk /login, /register, dll)
+// 1. AUTHENTICATION ROUTES (Login, Logout, Register)
 Auth::routes(); 
 
-// 1. --- Route DEFAULT /home ---
-// Route ini harus tetap ada, dialihkan ke display setelah login.
+// 2. HOME ROUTE (Override Laravel Default)
+// Diarahkan ke /display setelah login.
 Route::get('/home', function () {
     return redirect()->route('display.board');
 })->name('home');
 
 
-// 2. --- Admin Panel (CRUD) ---
-// Hanya bisa diakses oleh user yang sudah login dan role-based redirect mengarahkan admin ke sini.
+// 3. ADMIN PANEL (Protected & Role-Based redirect target)
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/posters', [PosterController::class, 'index'])->name('posters.index');
     Route::post('/posters', [PosterController::class, 'store'])->name('posters.store');
@@ -24,18 +22,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 });
 
 
-// 3. --- Halaman Utama Papan Informasi (Wajib Login) ---
-// TAMBAHKAN MIDDLEWARE 'auth' DI SINI
+// 4. HALAMAN UTAMA DISPLAY BOARD (Wajib Login)
 Route::get('/display', [PosterController::class, 'display'])->name('display.board')->middleware('auth');
 
 
-// 4. Route default: arahkan root (/) ke halaman login
+// 5. ROUTE ROOT (/)
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
-Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-Route::post('register', [RegisterController::class, 'register']);
-Auth::routes();
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

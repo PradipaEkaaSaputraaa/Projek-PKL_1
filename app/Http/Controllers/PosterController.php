@@ -2,100 +2,81 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Poster;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PosterController extends Controller
 {
-    // --- Bagian Admin (CRUD) ---
-
+    // Path dasar tempat semua poster disimpan (di dalam storage/app/public)
+    protected $storagePath = 'public/posters';
+    
+    // Asumsi: Semua path poster disimpan dalam satu file JSON/database, 
+    // atau kita langsung membaca isi folder. Kita asumsikan membaca folder.
+    
+    // Metode untuk menampilkan halaman Admin Panel
     public function index()
     {
-        // Ambil record terakhir (atau buat jika belum ada)
-        $poster = Poster::latest()->first();
+        // Ambil semua file gambar di folder public/posters
+        $files = Storage::files($this->storagePath);
+        
+        // Filter agar hanya menyertakan path yang valid (menghilangkan .gitignore dll)
+        $posters = array_filter($files, function($file) {
+            return preg_match('/\.(jpe?g|png)$/i', $file);
+        });
 
-        if (!$poster) {
-            $poster = Poster::create(['images' => []]);
-        }
+        // Hapus prefix 'public/' dari path
+        $posters = array_map(function($path) {
+            return str_replace('public/', '', $path);
+        }, $posters);
 
-        return view('admin.index', compact('poster'));
+        return view('admin.posters.index', compact('posters'));
     }
 
+    // Metode untuk mengupload dan menyimpan poster baru (Multiple Upload)
     public function store(Request $request)
     {
-        // Validasi: array wajib diisi, file harus JPG/JPEG/PNG, maks 10MB
         $request->validate([
             'posters' => 'required|array',
-            'posters.*' => 'mimes:jpg,jpeg,png|max:10240', 
+            'posters.*' => 'image|mimes:jpeg,png,jpg|max:10240', // 10MB per file
         ]);
 
-        $poster = Poster::latest()->first();
-        if (!$poster) {
-             $poster = Poster::create(['images' => []]);
-        }
-        
-        $currentImages = $poster->images ?? [];
-        $uploadedPaths = [];
-
-        foreach ($request->file('posters') as $file) {
-            // Simpan ke storage/app/public/posters
-            $path = $file->store('posters', 'public');
-            $uploadedPaths[] = $path;
+        foreach ($request->file('posters') as $poster) {
+            $filename = time() . '_' . $poster->getClientOriginalName();
+            $poster->storeAs('public/posters', $filename);
         }
 
-        // Gabungkan dan update
-        $newImages = array_merge($currentImages, $uploadedPaths);
-
-        // array_values() untuk memastikan array di-reindex setelah merge/upload baru
-        $poster->update(['images' => array_values($newImages)]); 
-
-        return redirect()->route('admin.posters.index')
-                         ->with('success', 'Poster berhasil diupload.');
+        return redirect()->route('admin.posters.index')->with('success', 'Poster berhasil diupload!');
     }
 
+    // Metode untuk menghapus poster
     public function destroy(Request $request)
     {
-        $request->validate(['image_path' => 'required|string']);
+        $request->validate([
+            'image_path' => 'required|string',
+        ]);
 
-        $poster = Poster::latest()->first();
-        
-        if (!$poster) {
-            return back()->with('error', 'Data poster tidak ditemukan.');
+        $fullPath = 'public/' . $request->image_path;
+
+        if (Storage::exists($fullPath)) {
+            Storage::delete($fullPath);
+            return redirect()->route('admin.posters.index')->with('success', 'Poster berhasil dihapus!');
         }
 
-        $imagePath = $request->input('image_path');
-        $currentImages = $poster->images ?? [];
-
-        // Hapus path dari array dan file dari storage
-        if (($key = array_search($imagePath, $currentImages)) !== false) {
-            unset($currentImages[$key]);
-            
-            Storage::disk('public')->delete($imagePath);
-
-            // Update database
-            $poster->update(['images' => array_values($currentImages)]); 
-
-            return back()->with('success', 'Poster berhasil dihapus.');
-        }
-
-        return back()->with('error', 'File poster tidak ditemukan dalam database.');
+        return redirect()->route('admin.posters.index')->with('error', 'File tidak ditemukan.');
     }
-    
-    // --- Bagian Display Papan Informasi ---
 
+    // Metode untuk menampilkan Display Board
     public function display()
     {
-        $poster = Poster::latest()->first();
-        $images = $poster ? $poster->images : [];
+        $files = Storage::files($this->storagePath);
         
-        $images = array_filter($images);
-
-        // Jika tidak ada gambar, tampilkan halaman kosong
-        if (empty($images)) {
-            return view('display.empty');
-        }
+        // Filter dan hapus prefix 'public/'
+        $images = array_map(function($path) {
+            return str_replace('public/', '', $path);
+        }, array_filter($files, function($file) {
+            return preg_match('/\.(jpe?g|png)$/i', $file);
+        }));
 
         return view('display.index', compact('images'));
     }
