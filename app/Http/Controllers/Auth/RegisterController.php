@@ -10,26 +10,15 @@ use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Register Controller
-    |--------------------------------------------------------------------------
-    */
-
     use RegistersUsers;
 
     /**
-     * Where to redirect users after registration.
-     *
-     * @var string
+     * Redirect setelah register berhasil
      */
-    // DIARAHKAN KE HALAMAN LOGIN SETELAH REGISTRASI BERHASIL
-    protected $redirectTo = '/login'; 
+    protected $redirectTo = '/home';
 
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * Constructor
      */
     public function __construct()
     {
@@ -37,37 +26,28 @@ class RegisterController extends Controller
     }
 
     /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
+     * VALIDASI DATA REGISTER
      */
     protected function validator(array $data)
     {
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            // TAMBAHAN: VALIDASI USERNAME (WAJIB ADA DAN UNIK)
-            'username' => ['required', 'string', 'max:255', 'unique:users'], 
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => 'user',
         ]);
     }
 
     /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return \App\Models\User
+     * SIMPAN USER BARU
      */
     protected function create(array $data)
     {
         return User::create([
-            'name' => $data['name'],
-            // TAMBAHAN: SIMPAN USERNAME KE DATABASE
-            'username' => $data['username'], 
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'name'     => $data['name'],
+            'username' => $data['username'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']), // bcrypt
         ]);
     }
 }

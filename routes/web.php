@@ -3,6 +3,7 @@
 use App\Http\Controllers\PosterController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Auth\RegisterController;
 
 // Route yang dibuat oleh php artisan ui:auth (untuk /login, /register, dll)
 Auth::routes(); 
@@ -32,3 +33,9 @@ Route::get('/display', [PosterController::class, 'display'])->name('display.boar
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('register', [RegisterController::class, 'register']);
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
